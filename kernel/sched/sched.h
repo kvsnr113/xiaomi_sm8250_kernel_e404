@@ -345,6 +345,8 @@ static inline bool dl_task_fits_capacity(struct task_struct *p, int cpu)
 	return cap_scale(p->dl.dl_deadline, cap) >= p->dl.dl_runtime;
 }
 
+unsigned long approximate_util_avg(unsigned long util, u64 delta);
+
 extern void dl_change_utilization(struct task_struct *p, u64 new_bw);
 extern void init_dl_bw(struct dl_bw *dl_b);
 extern int  sched_dl_global_validate(void);
