@@ -346,6 +346,7 @@ static inline bool dl_task_fits_capacity(struct task_struct *p, int cpu)
 }
 
 unsigned long approximate_util_avg(unsigned long util, u64 delta);
+u64 approximate_runtime(unsigned long util);
 
 extern void dl_change_utilization(struct task_struct *p, u64 new_bw);
 extern void init_dl_bw(struct dl_bw *dl_b);
