@@ -45,8 +45,13 @@ obj-y				+= dwc/
 # ARM64 and use internal ifdefs to only build the pieces we need
 # depending on whether ACPI, the DT driver, or both are enabled.
 
-ifdef CONFIG_PCI
+ifdef CONFIG_PCI_HOST_THUNDER_ECAM
 obj-$(CONFIG_ARM64) += pci-thunder-ecam.o
+endif
+ifdef CONFIG_PCI_HOST_THUNDER_PEM
 obj-$(CONFIG_ARM64) += pci-thunder-pem.o
+endif
+
+ifdef CONFIG_PCI_XGENE
 obj-$(CONFIG_ARM64) += pci-xgene.o
 endif
