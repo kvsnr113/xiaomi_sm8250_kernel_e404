@@ -1010,7 +1010,7 @@ out:
 static int fg_gen4_get_prop_capacity(struct fg_dev *fg, int *val)
 {
 	struct fg_gen4_chip *chip = container_of(fg, struct fg_gen4_chip, fg);
-	int rc, msoc;
+	int rc, msoc = 0;
 
 	if (!chip->dt.shutdown_delay_enable) {
 		*val = 1;
@@ -1638,7 +1638,7 @@ static int fg_gen4_adjust_ki_coeff_full_soc(struct fg_gen4_chip *chip,
 						int batt_temp)
 {
 	struct fg_dev *fg = &chip->fg;
-	int rc, ki_coeff_full_soc_norm, ki_coeff_full_soc_low;
+	int rc, ki_coeff_full_soc_norm = 0, ki_coeff_full_soc_low;
 	u8 val;
 
 	if ((batt_temp < 0) ||
@@ -4995,7 +4995,7 @@ ATTRIBUTE_GROUPS(fg);
 
 static int fg_gen4_set_vbatt_full_vol(struct fg_dev *fg, bool enable_ffc)
 {
-	int rc;
+	int rc = 0;
 	int volt;
 
 	if (enable_ffc)
