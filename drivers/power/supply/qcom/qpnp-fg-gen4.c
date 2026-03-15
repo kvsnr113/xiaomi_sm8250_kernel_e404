@@ -24,7 +24,7 @@
 /* add for get hw country */
 #include <soc/qcom/socinfo.h>
 
-#ifdef CONFIG_E404_SIGNATURE
+#ifdef CONFIG_E404_ATTRIBUTES
 #include <linux/e404_attributes.h>
 #endif
 
@@ -2101,7 +2101,7 @@ static int fg_gen4_get_batt_profile(struct fg_dev *fg)
 #ifdef CONFIG_BATT_VERIFY_BY_DS28E16
 		profile_node = ERR_PTR(-ENXIO);
 
-#ifdef CONFIG_E404_SIGNATURE
+#ifdef CONFIG_E404_ATTRIBUTES
 		/* force alioth to load 5000mah profile if user wanted */
 		if (e404_data.batt_profile == 2) {
 			if (of_property_read_bool(node, "qcom,j3s-batt-profile") && !fg->profile_already_find) {

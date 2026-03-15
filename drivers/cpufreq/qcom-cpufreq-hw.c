@@ -17,7 +17,7 @@
 #include <linux/sched.h>
 #include <linux/cpu_cooling.h>
 
-#ifdef CONFIG_E404_SIGNATURE
+#ifdef CONFIG_E404_ATTRIBUTES
 #include <linux/e404_attributes.h>
 #endif
 
@@ -505,7 +505,7 @@ static int qcom_cpufreq_hw_read_lut(struct platform_device *pdev,
 	if (!c->table)
 		return -ENOMEM;
 
-#ifdef CONFIG_E404_SIGNATURE
+#ifdef CONFIG_E404_ATTRIBUTES
 	if (e404_data.effcpu == 1) {
 		snprintf(tbl_name, sizeof(tbl_name), "qcom,effcpufreq-table-%d", domain_index);
 		pr_alert("E404: Using effcpu CPUFreq from DTB");
