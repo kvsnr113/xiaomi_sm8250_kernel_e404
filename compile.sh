@@ -61,7 +61,10 @@ case "$*" in
         TC="GCC"
         ;;
     *)
-        if [[ -d "$BASE_DIR/toolchains/lilium-clang" ]]; then
+        if [[ -d "$BASE_DIR/toolchains/llvm-clang" ]]; then
+            export PATH="$BASE_DIR/toolchains/llvm-clang/bin:$PATH"
+            TC="LLVM-Clang"
+        elif [[ -d "$BASE_DIR/toolchains/lilium-clang" ]]; then
             export PATH="$BASE_DIR/toolchains/lilium-clang/bin:$PATH"
             TC="Lilium-Clang"
         elif [[ -d "$BASE_DIR/toolchains/aosp-clang" ]]; then
@@ -70,9 +73,6 @@ case "$*" in
         elif [[ -d "$BASE_DIR/toolchains/neutron-clang" ]]; then
             export PATH="$BASE_DIR/toolchains/neutron-clang/bin:$PATH"
             TC="Neutron-Clang"
-        elif [[ -d "$BASE_DIR/toolchains/llvm-clang" ]]; then
-            export PATH="$BASE_DIR/toolchains/llvm-clang/bin:$PATH"
-            TC="LLVM-Clang"
         else
             echo "-- !! Please provide a toolchain !! --"
             exit 1
@@ -184,7 +184,7 @@ clearbuild() {
 zipbuild() {
     echo "-- Zipping Kernel --"
     cd "$AK3_DIR" || exit 1
-    ZIP_NAME="E404R-${TYPE}-${TARGET}-$(date "+%y%m%d").zip"
+    ZIP_NAME="RE404-${TYPE}-${TARGET}-$(date "+%y%m%d").zip"
     zip -r9 "$BASE_DIR/$ZIP_NAME" META-INF/ tools/ "${TARGET}"*-Image "${TARGET}"*-dtb "${TARGET}"*-dtbo.img anykernel.sh
     cd "$KERNEL_DIR" || exit 1
 }
