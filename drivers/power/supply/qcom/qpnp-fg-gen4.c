@@ -5399,7 +5399,6 @@ static int fg_psy_get_property(struct power_supply *psy,
 		pval->intval = chip->dt.ffc_ki_coeff_med_hi_chg_thr_ma;
 		break;
 	default:
-		pr_err("unsupported property %d\n", psp);
 		rc = -EINVAL;
 		break;
 	}
