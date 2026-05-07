@@ -33,9 +33,9 @@
 #include <linux/random.h>
 #include <linux/sched.h>
 
-#define ds_info	pr_info
+#define ds_info	pr_debug
 #define ds_dbg	pr_debug
-#define ds_err	pr_err
+#define ds_err	pr_debug
 #define ds_log	pr_debug
 
 struct ds28e16_data {
