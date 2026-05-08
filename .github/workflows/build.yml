@@ -1,4 +1,4 @@
-name: main
+name: mai24
 
 on:
   workflow_dispatch:
