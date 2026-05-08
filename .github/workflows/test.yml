@@ -1,8 +1,7 @@
-name: mai24
+name: main
 
 on:
   workflow_dispatch:
-  workflow_call:
     inputs:
       devices:
         description: "Target devices (space separated)"
