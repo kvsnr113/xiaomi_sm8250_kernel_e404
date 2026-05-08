@@ -1,0 +1,324 @@
+name: main
+
+on:
+  workflow_dispatch:
+    inputs:
+      devices:
+        description: "Target devices (space separated)"
+        required: true
+        default: "munch"
+
+      toolchain:
+        description: "Toolchain"
+        required: true
+        type: choice
+        options:
+          - llvm
+          - aosp
+          - neutron
+          - lilium
+          - gcc
+        default: llvm
+
+      target:
+        description: "Telegram target"
+        required: true
+        type: choice
+        options:
+          - private
+          - group
+          - channel
+        default: private
+
+      changelog:
+        description: "Send changelog"
+        required: false
+        type: boolean
+        default: false
+
+env:
+  ARCH: arm64
+  SUBARCH: arm64
+  TZ: Asia/Jakarta
+  USE_CCACHE: 1
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    env:
+      BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+      GROUP_ID: ${{ secrets.GROUP_ID }}
+      CHANNEL_ID: ${{ secrets.CHANNEL_ID }}
+      PRIVATE_ID: ${{ secrets.PRIVATE_ID }}
+
+    steps:
+      - name: Checkout Kernel Source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup KernelSU
+        shell: bash
+        run: |
+          rm -rf KernelSU
+          rm -rf drivers/kernelsu
+
+          curl -LSs \
+            https://raw.githubusercontent.com/rsuntk/KernelSU/main/kernel/setup.sh \
+            | bash -s main
+
+          mkdir -p drivers
+          ln -sf ../KernelSU drivers/kernelsu
+
+      - name: Restore CCache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ github.ref_name }}-${{ github.event.inputs.toolchain }}
+          restore-keys: |
+            ccache-${{ github.ref_name }}-
+
+      - name: Install Dependencies
+        run: |
+          sudo apt update
+
+          sudo apt install -y \
+            bc \
+            bison \
+            build-essential \
+            ccache \
+            curl \
+            flex \
+            git \
+            libelf-dev \
+            libssl-dev \
+            lld \
+            llvm \
+            python3 \
+            unzip \
+            wget \
+            zip
+
+      - name: Clone AnyKernel3
+        run: |
+          cd ..
+          git clone --depth=1 https://github.com/osm0sis/AnyKernel3.git
+
+      - name: Setup Toolchains
+        shell: bash
+        run: |
+          cd ..
+
+          mkdir -p toolchains
+          cd toolchains
+
+          case "${{ github.event.inputs.toolchain }}" in
+
+            llvm)
+              git clone --depth=1 https://github.com/ZyCromerZ/Clang llvm-clang
+              echo "$PWD/llvm-clang/bin" >> $GITHUB_PATH
+              echo "TC=LLVM-Clang" >> $GITHUB_ENV
+              ;;
+
+            aosp)
+              git clone --depth=1 https://github.com/ZyCromerZ/Clang aosp-clang
+              echo "$PWD/aosp-clang/bin" >> $GITHUB_PATH
+              echo "TC=AOSP-Clang" >> $GITHUB_ENV
+              ;;
+
+            neutron)
+              git clone --depth=1 https://github.com/Neutron-Toolchains/clang neutron-clang
+              echo "$PWD/neutron-clang/bin" >> $GITHUB_PATH
+              echo "TC=Neutron-Clang" >> $GITHUB_ENV
+              ;;
+
+            lilium)
+              git clone --depth=1 https://github.com/liliumproject/clang lilium-clang
+              echo "$PWD/lilium-clang/bin" >> $GITHUB_PATH
+              echo "TC=Lilium-Clang" >> $GITHUB_ENV
+              ;;
+
+            gcc)
+              mkdir gcc
+              cd gcc
+
+              wget -q https://mirrors.edge.kernel.org/pub/tools/crosstool/files/bin/x86_64/14.2.0/x86_64-gcc-14.2.0-nolibc-aarch64-linux.tar.xz
+              wget -q https://mirrors.edge.kernel.org/pub/tools/crosstool/files/bin/x86_64/14.2.0/x86_64-gcc-14.2.0-nolibc-arm-linux-gnueabi.tar.xz
+
+              tar -xf x86_64-gcc-14.2.0-nolibc-aarch64-linux.tar.xz
+              tar -xf x86_64-gcc-14.2.0-nolibc-arm-linux-gnueabi.tar.xz
+
+              echo "$PWD/gcc-14.2.0-nolibc-aarch64-linux/bin" >> $GITHUB_PATH
+              echo "$PWD/gcc-14.2.0-nolibc-arm-linux-gnueabi/bin" >> $GITHUB_PATH
+
+              echo "TC=GCC" >> $GITHUB_ENV
+              ;;
+          esac
+
+      - name: Build Kernel
+        shell: bash
+        run: |
+          set -e
+
+          mkdir -p out
+
+          export CCACHE_EXEC=$(which ccache)
+          export CCACHE_DIR=$HOME/.ccache
+
+          DEVICES="${{ github.event.inputs.devices }}"
+
+          declare -A DEVICE_MAP_CLANG=(
+            [munch]="MUNCH:vendor/munch_defconfig"
+            [alioth]="ALIOTH:vendor/alioth_defconfig"
+            [apollo]="APOLLO:vendor/apollo_defconfig"
+            [pipa]="PIPA:vendor/pipa_defconfig"
+            [lmi]="LMI:vendor/lmi_defconfig"
+            [umi]="UMI:vendor/umi_defconfig"
+            [cmi]="CMI:vendor/cmi_defconfig"
+            [cas]="CAS:vendor/cas_defconfig"
+          )
+
+          declare -A DEVICE_MAP_GCC=(
+            [munch]="MUNCH:vendor/munch_gcc_defconfig"
+            [alioth]="ALIOTH:vendor/alioth_gcc_defconfig"
+            [apollo]="APOLLO:vendor/apollo_gcc_defconfig"
+            [pipa]="PIPA:vendor/pipa_gcc_defconfig"
+            [lmi]="LMI:vendor/lmi_gcc_defconfig"
+            [umi]="UMI:vendor/umi_gcc_defconfig"
+            [cmi]="CMI:vendor/cmi_gcc_defconfig"
+            [cas]="CAS:vendor/cas_gcc_defconfig"
+          )
+
+          declare -A DEVICE_NAME_MAP=(
+            [munch]="POCO_F4"
+            [alioth]="POCO_F3"
+            [apollo]="MI_10T"
+            [pipa]="MI_PAD6"
+            [lmi]="POCO_F2"
+          )
+
+          case "${{ github.event.inputs.target }}" in
+            channel) CHAT_ID="$CHANNEL_ID" ;;
+            group) CHAT_ID="$GROUP_ID" ;;
+            *) CHAT_ID="$PRIVATE_ID" ;;
+          esac
+
+          for DEVICE in $DEVICES; do
+
+            echo "================================="
+            echo "Building device: $DEVICE"
+            echo "================================="
+
+            if [[ "${{ github.event.inputs.toolchain }}" == "gcc" ]]; then
+              CONFIG="${DEVICE_MAP_GCC[$DEVICE]}"
+            else
+              CONFIG="${DEVICE_MAP_CLANG[$DEVICE]}"
+            fi
+
+            if [[ -z "$CONFIG" ]]; then
+              echo "Invalid device: $DEVICE"
+              exit 1
+            fi
+
+            IFS=":" read -r TARGET DEFCONFIG <<< "$CONFIG"
+
+            DEVICE_NAME="${DEVICE_NAME_MAP[$DEVICE]:-$DEVICE}"
+
+            curl -s -X POST \
+              "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
+              -d chat_id="$CHAT_ID" \
+              -d parse_mode=html \
+              -d text="<b>Kernel Build Started</b>%0A<b>Device:</b> <code>$DEVICE_NAME</code>%0A<b>Branch:</b> <code>${{ github.ref_name }}</code>%0A<b>Toolchain:</b> <code>$TC</code>"
+
+            rm -rf out/arch/arm64/boot
+
+            make O=out "$DEFCONFIG"
+
+            LOG_FILE="$GITHUB_WORKSPACE/out/kernel_compile.log"
+
+            if [[ "$TC" == *Clang* ]]; then
+              make -j$(nproc) O=out \
+                CC="ccache clang" \
+                CROSS_COMPILE=aarch64-linux-gnu- \
+                CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
+                LLVM=1 \
+                LLVM_IAS=1 \
+                2>&1 | tee -a "$LOG_FILE"
+            else
+              make -j$(nproc) O=out \
+                CC="ccache aarch64-linux-gcc" \
+                CROSS_COMPILE=aarch64-linux- \
+                CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
+                2>&1 | tee -a "$LOG_FILE"
+            fi
+
+            test -f out/arch/arm64/boot/Image
+            test -f out/arch/arm64/boot/dtbo.img
+            test -f out/arch/arm64/boot/dtb
+
+            AK3_DIR="$GITHUB_WORKSPACE/../AnyKernel3"
+
+            sed -i "/devicename=/c\devicename=${DEVICE}" "$AK3_DIR/anykernel.sh"
+
+            cp out/arch/arm64/boot/Image "$AK3_DIR/${TARGET}-Image"
+            cp out/arch/arm64/boot/dtbo.img "$AK3_DIR/${TARGET}-dtbo.img"
+            cp out/arch/arm64/boot/dtb "$AK3_DIR/${TARGET}-dtb"
+
+            cd "$AK3_DIR"
+
+            ZIP_NAME="RE404-${DEVICE_NAME}-$(date "+%y%m%d-%H%M").zip"
+
+            zip -r9 "$GITHUB_WORKSPACE/out/$ZIP_NAME" \
+              META-INF \
+              tools \
+              anykernel.sh \
+              "${TARGET}-Image" \
+              "${TARGET}-dtbo.img" \
+              "${TARGET}-dtb"
+
+            cd "$GITHUB_WORKSPACE"
+
+            curl -s -X POST \
+              "https://api.telegram.org/bot$BOT_TOKEN/sendDocument" \
+              -F chat_id="$CHAT_ID" \
+              -F document=@"out/$ZIP_NAME"
+
+          done
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-builds
+          path: out/*.zip
+
+      - name: Send Changelog
+        if: success() && github.event.inputs.changelog == true
+        run: |
+          CHANGELOG_FILE="../kernel_changelog.txt"
+
+          case "${{ github.event.inputs.target }}" in
+            channel) CHAT_ID="$CHANNEL_ID" ;;
+            group) CHAT_ID="$GROUP_ID" ;;
+            *) CHAT_ID="$PRIVATE_ID" ;;
+          esac
+
+          if [[ ! -f "$CHANGELOG_FILE" ]]; then
+            echo "- Another weekly build" > "$CHANGELOG_FILE"
+          fi
+
+          CHANGELOG=$(sed 's/$/%0A/' "$CHANGELOG_FILE" | tr -d '\n')
+
+          curl -s -X POST \
+            "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
+            -d chat_id="$CHAT_ID" \
+            -d parse_mode=html \
+            -d text="<b>Changelog(s):</b>%0A<code>$CHANGELOG</code>"
+
+      - name: Show CCache Stats
+        if: always()
+        run: |
+          echo "======== CCache Stats =========="
+          ccache -p | grep cache_dir || true
+          ccache -s || true
+          echo "================================"
