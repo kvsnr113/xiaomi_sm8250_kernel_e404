@@ -30,17 +30,8 @@ struct e404_attributes e404_data = {
     .batt_profile               = 1,
     .kgsl_skip_zeroing          = 0,
     .file_sync                  = 1,
-#ifdef CONFIG_BOARD_PIPA
-    .panel_oem_width_pipa       = 1662,
-    .panel_oem_height_pipa      = 2660,
-    .panel_width_pipa           = 166,
-    .panel_height_pipa          = 266,
-#else
-    .panel_width                = 70,
-    .panel_height               = 155,
-    .panel_oem_width            = 700,
-    .panel_oem_height           = 1550,
-#endif
+    .panel_width                = 0,
+    .panel_height               = 0,
     .bg_blocklist               = "com.shopee.id,com.lazada.android,com.tokopedia.tkpd",
 };
 
@@ -69,23 +60,34 @@ static int __init parse_e404_args(char *str)
             early_rom_type = 2;
         else if (strcmp(arg, "rom_aosp") == 0)
             early_rom_type = 1;
-#ifdef CONFIG_BOARD_PIPA
         else if (strcmp(arg, "dtbo_def_pipa") == 0)
             early_dtbo_type = 3;
         else if (strcmp(arg, "dtbo_oem_pipa") == 0)
             early_dtbo_type = 4;
-#else
         else if (strcmp(arg, "dtbo_def") == 0)
             early_dtbo_type = 1;
         else if (strcmp(arg, "dtbo_oem") == 0)
             early_dtbo_type = 2;
-#endif
         else if (strcmp(arg, "batt_def") == 0)
             early_batt_profile = 1;
         else if (strcmp(arg, "batt_5k") == 0)
             early_batt_profile = 2;
         else
             pr_alert("E404: Unknown flag: %s\n", arg);
+    }
+
+    if (early_dtbo_type == 1) { // aosp dtbo
+        e404_data.panel_width = 70;
+        e404_data.panel_height = 155;
+    } else if (early_dtbo_type == 2) { // oem dtbo
+        e404_data.panel_width = 700;
+        e404_data.panel_height = 1550;
+    } else if (early_dtbo_type == 3) { // aosp pipa dtbo
+        e404_data.panel_width = 166;
+        e404_data.panel_height = 266;
+    } else if (early_dtbo_type == 4) { // oem pipa dtbo
+        e404_data.panel_width = 1662;
+        e404_data.panel_height = 2660;
     }
 
     return 0;
@@ -185,18 +187,8 @@ E404_ATTR_RO(effcpu);
 E404_ATTR_RO(rom_type);
 E404_ATTR_RO(dtbo_type);
 E404_ATTR_RO(batt_profile);
-#ifdef CONFIG_BOARD_PIPA
-E404_ATTR_RO(panel_width_pipa);
-E404_ATTR_RO(panel_height_pipa);
-E404_ATTR_RO(panel_oem_width_pipa);
-E404_ATTR_RO(panel_oem_height_pipa);
-#else
 E404_ATTR_RO(panel_width);
 E404_ATTR_RO(panel_height);
-E404_ATTR_RO(panel_oem_width);
-E404_ATTR_RO(panel_oem_height);
-#endif
-
 E404_ATTR_RW(kgsl_skip_zeroing);
 E404_ATTR_RW(file_sync);
 
@@ -216,17 +208,8 @@ static struct attribute *e404_prop_attrs[] = {
     &rom_type_attr.attr,
     &dtbo_type_attr.attr,
     &batt_profile_attr.attr,
-#ifdef CONFIG_BOARD_PIPA
-    &panel_width_pipa_attr.attr,
-    &panel_height_pipa_attr.attr,
-    &panel_oem_width_pipa_attr.attr,
-    &panel_oem_height_pipa_attr.attr,
-#else
     &panel_width_attr.attr,
     &panel_height_attr.attr,
-    &panel_oem_width_attr.attr,
-    &panel_oem_height_attr.attr,
-#endif
     NULL,
 };
 
