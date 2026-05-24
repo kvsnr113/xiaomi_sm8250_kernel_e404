@@ -101,6 +101,61 @@ config E404_ALIOTH_5K_BATT_DEFAULT
 	depends on E404_ATTRIBUTES
 	default n
 
+config E404_DROIDSPACES
+	bool "add support for Droidspaces. a lightweight, portable Linux containerization."
+	depends on E404_ATTRIBUTES
+	select SYSCTL
+	select SYSVIPC
+	select POSIX_MQUEUE
+	select NAMESPACES
+	select PID_NS
+	select UTS_NS
+	select IPC_NS
+	select SECCOMP
+	select SECCOMP_FILTER
+	select CGROUPS
+	select CGROUP_DEVICE
+	select CGROUP_PIDS
+	select MEMCG
+	select CGROUP_SCHED
+	select FAIR_GROUP_SCHED
+	select CGROUP_FREEZER
+	select CGROUP_NET_PRIO
+	select DEVTMPFS
+	select OVERLAY_FS
+	select TMPFS_POSIX_ACL
+	select TMPFS_XATTR
+	select FW_LOADER
+	select FW_LOADER_USER_HELPER
+	select FW_LOADER_COMPRESS
+	select NET_NS
+	select VETH
+	select BRIDGE
+	select NETFILTER
+	select BRIDGE_NETFILTER
+	select NETFILTER_ADVANCED
+	select NF_CONNTRACK
+	select IP_NF_IPTABLES
+	select IP_NF_FILTER
+	select NF_NAT
+	select NF_TABLES
+	select IP_NF_TARGET_MASQUERADE
+	select NETFILTER_XT_TARGET_MASQUERADE
+	select NETFILTER_XT_TARGET_TCPMSS
+	select NETFILTER_XT_MATCH_ADDRTYPE
+	select NF_CONNTRACK_NETLINK
+	select NF_NAT_REDIRECT
+	select IP_ADVANCED_ROUTER
+	select IP_MULTIPLE_TABLES
+	select NF_CONNTRACK_IPV4
+	select NF_NAT_IPV4
+	select IP_NF_NAT
+	select NF_TABLES_TRACE
+
+	default n
+	help
+		Enabling this config will enable all Kernel configurations for full DroidSpaces support.
+
 endmenu
 
 menu "General setup"
