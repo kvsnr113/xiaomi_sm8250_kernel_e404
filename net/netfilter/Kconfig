@@ -529,6 +529,10 @@ config NFT_LOG
 	  This option adds the "log" expression that you can use to log
 	  packets matching some criteria.
 
+config NF_TABLES_TRACE
+	bool
+	depends on NF_TABLES
+
 config NFT_LIMIT
 	tristate "Netfilter nf_tables limit module"
 	help
