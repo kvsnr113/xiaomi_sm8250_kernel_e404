@@ -129,26 +129,9 @@ static ssize_t sel_read_enforce(struct file *filp, char __user *buf,
 	struct selinux_fs_info *fsi = file_inode(filp)->i_sb->s_fs_info;
 	char tmpbuf[TMPBUFLEN];
 	ssize_t length;
-#ifdef CONFIG_E404_OPLUS
-	bool hide = false;
 
-	if (e404_data.rom_type == 3) {
-		if (current->cred->uid.val >= 10000)
-			hide = true;
-		else if (strstr(current->comm, ".gms") != NULL)
-			hide = true;
-
-		length = scnprintf(tmpbuf, TMPBUFLEN, "%d", hide ? 1 : 0);
-	} else {
-		length = scnprintf(tmpbuf, TMPBUFLEN, "%d",
-			   enforcing_enabled(fsi->state));
-	}
-
-#else
 	length = scnprintf(tmpbuf, TMPBUFLEN, "%d",
 			   enforcing_enabled(fsi->state));
-#endif
-
 	return simple_read_from_buffer(buf, count, ppos, tmpbuf, length);
 }
 
@@ -178,14 +161,7 @@ static ssize_t sel_write_enforce(struct file *file, const char __user *buf,
 	if (sscanf(page, "%d", &new_value) != 1)
 		goto out;
 
-#ifdef CONFIG_E404_OPLUS
-	if (e404_data.rom_type == 3)
-		new_value = 0;
-	else
-		new_value = !!new_value;
-#else
 	new_value = !!new_value;
-#endif
 
 	old_value = enforcing_enabled(state);
 	if (new_value != old_value) {
