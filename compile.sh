@@ -145,9 +145,9 @@ case "$*" in
         TC="GCC"
     ;;
     *)
-        if [[ -d "$BASE_DIR/toolchains/llvm-clang" ]]; then
-            export PATH="$BASE_DIR/toolchains/llvm-clang/bin:$PATH"
-            TC="LLVM-Clang"
+        if [[ -d "$BASE_DIR/toolchains/clang" ]]; then
+            export PATH="$BASE_DIR/toolchains/clang/bin:$PATH"
+            TC="Clang"
         else
             echo "--- ! Failed to find toolchain at $BASE_DIR/toolchains/ ! ---" && exit 1
         fi
