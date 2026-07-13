@@ -94,7 +94,7 @@ static bool sugov_should_update_freq(struct sugov_policy *sg_policy, u64 time)
 
 	if (unlikely(READ_ONCE(sg_policy->limits_changed))) {
 		WRITE_ONCE(sg_policy->limits_changed, false);
-		sg_policy->need_freq_update = true;
+		sg_policy->need_freq_update = cpufreq_driver_test_flags(CPUFREQ_NEED_UPDATE_LIMITS);
 
 		/*
 		 * The above limits_changed update must occur before the reads
@@ -235,18 +235,11 @@ static unsigned int get_next_freq(struct sugov_policy *sg_policy,
 
 static inline unsigned long sugov_apply_dvfs_headroom(unsigned long util,
 						      unsigned long capacity,
-						      unsigned long threshold)
+						      unsigned long shift)
 {
-	unsigned long delta, headroom;
 	unsigned long capped_util = min(util, capacity);
-	unsigned long delta_t = (capacity * 220) >> 10;
 
-	delta = capacity - capped_util;
-
-	headroom = min((delta_t * capped_util) / threshold,
-			(delta_t * delta) / (capacity - threshold));
-
-	return capped_util + headroom;
+	return capped_util + (capped_util >> shift);
 }
 
 
@@ -642,19 +635,17 @@ static void sugov_build_dvfs_headroom_lut(struct sugov_policy *sg_policy)
 {
 	struct cpufreq_policy *policy = sg_policy->policy;
 	unsigned long capacity = capacity_orig_of(policy->cpu);
-	unsigned long threshold;
 	unsigned long util;
+	unsigned long shift = (policy->cpu >= 7) ? 2 : 3;
 
 	if (sg_policy->dvfs_capacity == capacity)
 		return;
 
 	sg_policy->dvfs_capacity = capacity;
 
-	threshold = (capacity * 15) / 100;
-
 	for (util = 0; util <= SCHED_CAPACITY_SCALE; util++)
 		sg_policy->dvfs_headroom_lut[util] =
-			sugov_apply_dvfs_headroom(util, capacity, threshold);
+			sugov_apply_dvfs_headroom(util, capacity, shift);
 }
 
 static struct sugov_policy *sugov_policy_alloc(struct cpufreq_policy *policy)
