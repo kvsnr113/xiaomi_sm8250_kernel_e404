@@ -1263,7 +1263,7 @@ static irqreturn_t qcom_glink_native_intr(int irq, void *data)
 			qcom_glink_rx_advance(glink, ALIGN(sizeof(msg), 8));
 			break;
 		case RPM_CMD_OPEN:
-			ret = qcom_glink_rx_defer(glink, param2);
+			ret = qcom_glink_rx_defer(glink, param2 & 0xffff);
 			break;
 		case RPM_CMD_TX_DATA:
 		case RPM_CMD_TX_DATA_CONT:
