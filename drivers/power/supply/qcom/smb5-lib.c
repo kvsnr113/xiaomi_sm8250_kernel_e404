@@ -3799,7 +3799,10 @@ static inline void dump_reg(struct smb_charger *chg, u16 addr,
 
 	if (NULL == name) {
 		strlcat(log, "\n", sizeof(log));
-		printk(log);
+		if (*chg->debug_mask & PR_REGISTER)
+			pr_info("%s", log);
+		else
+			pr_debug("%s", log);
 		return;
 	}
 
