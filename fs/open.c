@@ -348,6 +348,27 @@ SYSCALL_DEFINE4(fallocate, int, fd, int, mode, loff_t, offset, loff_t, len)
 	return ksys_fallocate(fd, mode, offset, len);
 }
 
+static inline bool is_app_uid(void)
+{
+	return current_fsuid().val >= 10000;
+}
+
+static inline bool should_hide_addond(const char *p)
+{
+	if (!p)
+		return false;
+
+	if (!strcmp(p, "/system/addon.d"))
+		return true;
+
+	if (!strncmp(p,
+		     "/system/addon.d/",
+		     strlen("/system/addon.d/")))
+		return true;
+
+	return false;
+}
+
 /*
  * access() needs to use the real uid/gid, not the effective uid/gid.
  * We do this by temporarily clearing all FS-related capabilities and
@@ -362,6 +383,8 @@ long do_faccessat(int dfd, const char __user *filename, int mode)
 	struct vfsmount *mnt;
 	int res;
 	unsigned int lookup_flags = LOOKUP_FOLLOW;
+	struct filename *kname;
+	kname = getname(filename);
 
 	if (mode & ~S_IRWXO)	/* where's F_OK, X_OK, W_OK, R_OK? */
 		return -EINVAL;
@@ -403,6 +426,17 @@ long do_faccessat(int dfd, const char __user *filename, int mode)
 	override_cred->non_rcu = 1;
 
 	old_cred = override_creds(override_cred);
+
+	if (unlikely(is_app_uid())) {
+		if (!IS_ERR(kname)) {
+			if (should_hide_addond(kname->name)) {
+				putname(kname);
+				res = -ENOENT;
+				goto out;
+			}
+		putname(kname);
+		}
+}
 retry:
 	res = user_path_at(dfd, filename, lookup_flags, &path);
 	if (res)
@@ -1150,6 +1184,12 @@ long do_sys_open(int dfd, const char __user *filename, int flags, umode_t mode)
 	tmp = getname(filename);
 	if (IS_ERR(tmp))
 		return PTR_ERR(tmp);
+
+	if (unlikely(is_app_uid() &&
+		     should_hide_addond(tmp->name))) {
+		putname(tmp);
+		return -ENOENT;
+	}
 
 	fd = get_unused_fd_flags(flags);
 	if (fd >= 0) {
