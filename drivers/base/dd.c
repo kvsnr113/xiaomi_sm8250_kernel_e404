@@ -914,7 +914,7 @@ static int __driver_attach(struct device *dev, void *data)
 		driver_deferred_probe_add(dev);
 	} else if (ret < 0) {
 		dev_dbg(dev, "Bus failed to match device: %d", ret);
-		return ret;
+		return 0;
 	} /* ret > 0 means positive match */
 
 	if (dev->parent && dev->bus->need_parent_lock)
