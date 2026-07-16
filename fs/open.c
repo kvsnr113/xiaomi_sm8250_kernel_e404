@@ -386,12 +386,16 @@ long do_faccessat(int dfd, const char __user *filename, int mode)
 	struct filename *kname;
 	kname = getname(filename);
 
-	if (mode & ~S_IRWXO)	/* where's F_OK, X_OK, W_OK, R_OK? */
+	if (mode & ~S_IRWXO) {	/* where's F_OK, X_OK, W_OK, R_OK? */
+		putname(kname);
 		return -EINVAL;
+	}
 
 	override_cred = prepare_creds();
-	if (!override_cred)
+	if (!override_cred) {
+		putname(kname);
 		return -ENOMEM;
+	}
 
 	override_cred->fsuid = override_cred->uid;
 	override_cred->fsgid = override_cred->gid;
@@ -427,16 +431,14 @@ long do_faccessat(int dfd, const char __user *filename, int mode)
 
 	old_cred = override_creds(override_cred);
 
-	if (unlikely(is_app_uid())) {
-		if (!IS_ERR(kname)) {
-			if (should_hide_addond(kname->name)) {
-				putname(kname);
-				res = -ENOENT;
-				goto out;
-			}
-		putname(kname);
+	if (!IS_ERR(kname)) {
+		if (unlikely(is_app_uid()) && should_hide_addond(kname->name)) {
+			putname(kname);
+			res = -ENOENT;
+			goto out;
 		}
-}
+		putname(kname);
+	}
 retry:
 	res = user_path_at(dfd, filename, lookup_flags, &path);
 	if (res)
