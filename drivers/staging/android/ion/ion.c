@@ -1037,6 +1037,12 @@ static const struct dma_buf_ops dma_buf_ops = {
 	.get_flags = ion_dma_buf_get_flags,
 };
 
+static int ion_dma_buf_release_exp_name(struct dma_buf *dmabuf, void *unused)
+{
+	kfree(dmabuf->exp_name);
+	return 0;
+}
+
 struct dma_buf *ion_alloc_dmabuf(size_t len, unsigned int heap_id_mask,
 				 unsigned int flags, int pid_info)
 {
@@ -1126,6 +1132,8 @@ struct dma_buf *ion_alloc_dmabuf(size_t len, unsigned int heap_id_mask,
 	if (IS_ERR(dmabuf)) {
 		_ion_buffer_destroy(buffer);
 		kfree(exp_info.exp_name);
+	} else {
+		dma_buf_set_destructor(dmabuf, ion_dma_buf_release_exp_name, NULL);
 	}
 
 	return dmabuf;
