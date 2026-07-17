@@ -22,6 +22,10 @@
 #include <linux/atomic.h>
 #include <drm/drm_refresh_rate.h>
 
+#ifdef CONFIG_E404_ATTRIBUTES
+#include <linux/e404_attributes.h>
+#endif
+
 struct fas_cpu_sync {
 	int cpu;
 	unsigned int boost_min;
@@ -92,6 +96,11 @@ static void fas_do_boost(struct work_struct *work)
 {
 	unsigned int fps = dsi_panel_get_refresh_rate();
 	unsigned int i;
+
+#ifdef CONFIG_E404_ATTRIBUTES
+	if (!e404_data.fas)
+		return;
+#endif
 
 	/*
 	 * we don't boost 60hz and less. return immediately
