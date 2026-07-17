@@ -25,6 +25,10 @@
 #include <uapi/linux/sched/types.h>
 #include <drm/drm_refresh_rate.h>
 
+#ifdef CONFIG_E404_ATTRIBUTES
+#include <linux/e404_attributes.h>
+#endif
+
 /*
  * Silver cluster CPUs (0-3) boost frequencies by FPS tier.
  * Gold/Prime are intentionally unboosted — FAS targets the little cluster only.
@@ -233,6 +237,11 @@ static void fas_input_event(struct input_handle *handle,
 {
 	u64 now = ktime_to_us(ktime_get());
 
+#ifdef CONFIG_E404_ATTRIBUTES
+	if (!e404_data.fas)
+		return;
+#endif
+
 	if (now - fas_last_input_time < FAS_MIN_INPUT_INTERVAL)
 		return;
 
@@ -318,6 +327,11 @@ void fas_do_cmdbatch_boost(void)
 	u64 now = ktime_to_ms(ktime_get());
 	u64 interval;
 	unsigned int window_ms;
+
+#ifdef CONFIG_E404_ATTRIBUTES
+	if (!e404_data.fas)
+		return;
+#endif
 
 	if (fps <= 60)
 		return;

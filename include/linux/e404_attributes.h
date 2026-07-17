@@ -32,6 +32,7 @@ struct e404_attributes {
     int panel_oem_width;
     int panel_oem_height;
 #endif
+    bool fas;
 };
 
 extern struct e404_attributes e404_data;
