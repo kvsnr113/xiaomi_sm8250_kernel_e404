@@ -12,6 +12,13 @@
 #include <linux/memcontrol.h>
 #include <linux/highmem.h>
 
+extern int isolate_lru_page(struct page *page);
+extern void putback_lru_page(struct page *page);
+#ifdef CONFIG_PROCESS_RECLAIM
+extern unsigned long reclaim_pages_from_list(struct list_head *page_list,
+					     struct vm_area_struct *vma);
+#endif
+
 /*
  * The anon_vma heads a list of private "related" vmas, to scan if
  * an anonymous page pointing to this anon_vma needs to be unmapped:
