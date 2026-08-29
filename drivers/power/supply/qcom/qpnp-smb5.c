@@ -1509,7 +1509,16 @@ static int smb5_usb_get_prop(struct power_supply *psy,
 		val->intval = get_client_vote(chg->usb_icl_votable, PD_VOTER);
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_MAX:
-		rc = smblib_get_prop_input_current_max(chg, val);
+		if (smblib_get_fastcharge_mode(chg))
+    #if defined(CONFIG_BOARD_CAS) || defined(CONFIG_BOARD_MUNCH)
+			val->intval = 12000000;
+	#elif defined CONFIG_BOARD_CMI
+			val->intval = 10000000;
+	#else
+			val->intval = 6000000;
+	#endif
+		else
+			rc = smblib_get_prop_input_current_max(chg, val);
 		break;
 	case POWER_SUPPLY_PROP_TYPE:
 		val->intval = POWER_SUPPLY_TYPE_USB_PD;
@@ -4021,8 +4030,9 @@ static int smb5_init_connector_type(struct smb_charger *chg)
 	 */
 	if (chg->chg_param.smb_version == PMI632_SUBTYPE) {
 		schgm_flash_init(chg);
-		smblib_rerun_apsd_if_required(chg);
 	}
+
+	smblib_rerun_apsd_if_required(chg);
 
 	return 0;
 
@@ -5223,6 +5233,9 @@ static void smb5_shutdown(struct platform_device *pdev)
 
 	/* disable all interrupts */
 	smb5_disable_interrupts(chg);
+
+	/* disable VBUS regulator */
+	smblib_masked_write(chg, DCDC_CMD_OTG_REG, OTG_EN_BIT, 0);
 
 	/* disable the SMB_EN configuration */
 	smblib_masked_write(chg, MISC_SMB_EN_CMD_REG, EN_CP_CMD_BIT, 0);
