@@ -66,6 +66,18 @@ static void thermal_throttle_worker(struct work_struct *work)
 	s64 temp_total = 0, temp_avg = 0;
 	short i = 0;
 
+	/* Skip throttling entirely during the first 60s of boot */
+	if (unlikely(ktime_to_ns(ktime_get_boottime()) < 60ULL * NSEC_PER_SEC)) {
+		old_zone = t->curr_zone;
+		if (old_zone) {
+			t->curr_zone = NULL;
+			update_online_cpu_policy();
+			pr_info("boot grace period, restoring CPU freqs\n");
+		}
+		queue_delayed_work(t->wq, &t->throttle_work, t->poll_jiffies);
+		return;
+	}
+
 	/* Store average temperature of all CPU cores */
 	for (i; i < NR_CPUS; i++) {
 		char zone_name[15];
