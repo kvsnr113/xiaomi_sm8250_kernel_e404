@@ -30,6 +30,10 @@
 #include "base.h"
 #include "power/power.h"
 
+#ifdef CONFIG_E404_ATTRIBUTES
+#include <linux/e404_attributes.h>
+#endif
+
 #ifdef CONFIG_SYSFS_DEPRECATED
 #ifdef CONFIG_SYSFS_DEPRECATED_V2
 long sysfs_deprecated = 1;
@@ -1722,8 +1726,10 @@ static ssize_t online_store(struct device *dev, struct device_attribute *attr,
 	bool val;
 	int ret;
 
-	if (from_kuid_munged(current_user_ns(), current_uid()) == 1000)
+#ifdef CONFIG_E404_ATTRIBUTES
+	if (e404_data.simple_thermal == 1)
 		return -EPERM;
+#endif
 
 	ret = strtobool(buf, &val);
 	if (ret < 0)

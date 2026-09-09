@@ -34,6 +34,9 @@
 #include <linux/sched/sysctl.h>
 
 #include <trace/events/power.h>
+#ifdef CONFIG_E404_ATTRIBUTES
+#include <linux/e404_attributes.h>
+#endif
 
 static LIST_HEAD(cpufreq_policy_list);
 
@@ -700,6 +703,41 @@ static int cpufreq_set_policy(struct cpufreq_policy *policy,
 /**
  * cpufreq_per_cpu_attr_write() / store_##file_name() - sysfs write access
  */
+#ifdef CONFIG_E404_ATTRIBUTES
+#define store_one(file_name, object)			\
+static ssize_t store_##file_name					\
+(struct cpufreq_policy *policy, const char *buf, size_t count)		\
+{									\
+	int ret, temp;							\
+	struct cpufreq_policy new_policy;				\
+									\
+	if (&policy->object == &policy->min) {				\
+		if (e404_data.simple_thermal == 1)				\
+			return -EPERM;					\
+		else								\
+			return count;								\
+	}								\
+	if (&policy->object == &policy->max) {				\
+		if (e404_data.simple_thermal == 1)				\
+			return -EPERM;					\
+	}								\
+									\
+	memcpy(&new_policy, policy, sizeof(*policy));			\
+	new_policy.min = policy->user_policy.min;			\
+	new_policy.max = policy->user_policy.max;			\
+									\
+	ret = sscanf(buf, "%u", &new_policy.object);			\
+	if (ret != 1)							\
+		return -EINVAL;						\
+									\
+	temp = new_policy.object;					\
+	ret = cpufreq_set_policy(policy, &new_policy);		\
+	if (!ret)							\
+		policy->user_policy.object = temp;			\
+									\
+	return ret ? ret : count;					\
+}
+#else
 #define store_one(file_name, object)			\
 static ssize_t store_##file_name					\
 (struct cpufreq_policy *policy, const char *buf, size_t count)		\
@@ -725,6 +763,7 @@ static ssize_t store_##file_name					\
 									\
 	return ret ? ret : count;					\
 }
+#endif
 
 store_one(scaling_min_freq, min);
 store_one(scaling_max_freq, max);
