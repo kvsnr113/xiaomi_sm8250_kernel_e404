@@ -30,6 +30,7 @@ struct e404_attributes e404_data = {
     .batt_profile               = 1,
     .kgsl_skip_zeroing          = 0,
     .file_sync                  = 1,
+    .simple_thermal             = 1,
 #ifdef CONFIG_BOARD_PIPA
     .panel_oem_width_pipa       = 1662,
     .panel_oem_height_pipa      = 2660,
@@ -125,10 +126,12 @@ E404_ATTR_RO(panel_oem_height);
 
 E404_ATTR_RW(kgsl_skip_zeroing);
 E404_ATTR_RW(file_sync);
+E404_ATTR_RW(simple_thermal);
 
 static struct attribute *e404_attrs[] = {
     &kgsl_skip_zeroing_attr.attr,
     &file_sync_attr.attr,
+    &simple_thermal_attr.attr,
     NULL,
 };
 

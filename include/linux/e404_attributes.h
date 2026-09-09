@@ -15,6 +15,7 @@ struct e404_attributes {
     int batt_profile;
     int kgsl_skip_zeroing;
     int file_sync;
+    int simple_thermal;
 #ifdef CONFIG_BOARD_PIPA
     int panel_width_pipa;
     int panel_height_pipa;
