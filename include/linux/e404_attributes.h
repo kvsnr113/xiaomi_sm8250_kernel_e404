@@ -7,6 +7,8 @@
 #include <linux/kobject.h>
 #include <linux/sysfs.h>
 #include <linux/sched.h>
+#include <linux/cpu.h>
+#include <linux/cpufreq.h>
 
 struct e404_attributes {
     int effcpu;

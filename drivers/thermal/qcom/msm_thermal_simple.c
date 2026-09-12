@@ -12,6 +12,9 @@
 #include <linux/platform_device.h>
 #include <linux/slab.h>
 #include <linux/thermal.h>
+#include <linux/e404_attributes.h>
+
+extern atomic_t switch_mode;
 
 #define OF_READ_U32(node, prop, dst)						\
 ({										\
@@ -57,6 +60,20 @@ static void update_online_cpu_policy(void)
 	put_online_cpus();
 }
 
+static void force_all_cpus_online(void)
+{
+	int cpu;
+
+	cpu_maps_update_begin();
+	for_each_possible_cpu(cpu) {
+		if (!cpu_online(cpu)) {
+			pr_info("msm_thermal_simple: Forcing CPU %d online\n", cpu);
+			cpu_up(cpu);
+		}
+	}
+	cpu_maps_update_done();
+}
+
 static void thermal_throttle_worker(struct work_struct *work)
 {
 	struct thermal_drv *t = container_of(to_delayed_work(work), typeof(*t),
@@ -72,7 +89,16 @@ static void thermal_throttle_worker(struct work_struct *work)
 		if (old_zone) {
 			t->curr_zone = NULL;
 			update_online_cpu_policy();
-			pr_info("boot grace period, restoring CPU freqs\n");
+		}
+		queue_delayed_work(t->wq, &t->throttle_work, t->poll_jiffies);
+		return;
+	}
+
+	if (e404_data.simple_thermal == 0) {
+		old_zone = t->curr_zone;
+		if (old_zone) {
+			t->curr_zone = NULL;
+			update_online_cpu_policy();
 		}
 		queue_delayed_work(t->wq, &t->throttle_work, t->poll_jiffies);
 		return;
@@ -150,7 +176,7 @@ static int cpu_notifier_cb(struct notifier_block *nb, unsigned long val,
 		return NOTIFY_OK;
 
 	zone = t->curr_zone;
-	if (zone)
+	if (zone && (e404_data.simple_thermal == 1))
 		policy->max = get_throttle_freq(zone, policy->cpu);
 	else
 		policy->max = policy->user_policy.max;
