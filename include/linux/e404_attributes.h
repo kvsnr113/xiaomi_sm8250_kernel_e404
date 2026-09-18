@@ -13,7 +13,6 @@ struct e404_attributes {
     int rom_type;
     int dtbo_type;
     int batt_profile;
-    int kgsl_skip_zeroing;
     int file_sync;
 #ifdef CONFIG_BOARD_PIPA
     int panel_width_pipa;
