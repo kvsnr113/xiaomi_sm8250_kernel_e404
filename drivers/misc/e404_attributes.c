@@ -28,7 +28,6 @@ struct e404_attributes e404_data = {
     .rom_type                   = 1,
     .dtbo_type                  = 0,
     .batt_profile               = 1,
-    .file_sync                  = 1,
 #ifdef CONFIG_BOARD_PIPA
     .panel_oem_width_pipa       = 1662,
     .panel_oem_height_pipa      = 2660,
@@ -122,7 +121,7 @@ E404_ATTR_RO(panel_oem_width);
 E404_ATTR_RO(panel_oem_height);
 #endif
 
-E404_ATTR_RW(file_sync);
+// E404_ATTR_RW(xxx);
 
 static struct attribute *e404_attrs[] = {
     &file_sync_attr.attr,
