@@ -4199,7 +4199,6 @@ void scheduler_tick(void)
 	rq->idle_balance = idle_cpu(cpu);
 	trigger_load_balance(rq);
 #endif
-
 }
 
 #ifdef CONFIG_NO_HZ_FULL
