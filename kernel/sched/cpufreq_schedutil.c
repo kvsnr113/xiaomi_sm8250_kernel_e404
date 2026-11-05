@@ -45,8 +45,8 @@ struct sugov_policy {
 	bool			limits_changed;
 	bool			need_freq_update;
 
-	u64			dvfs_headroom_lut_delay;
 	u16			dvfs_headroom_lut[SCHED_CAPACITY_SCALE + 1];
+	u64			dvfs_headroom_lut_delay;
 };
 
 struct sugov_cpu {
@@ -105,7 +105,7 @@ static inline void sugov_update_response_time_mult(struct sugov_policy *sg_polic
 	mult = sg_policy->freq_response_time_ms * SCHED_CAPACITY_SCALE;
 	mult /=	sg_policy->tunables->response_time_ms;
 
-	if (SCHED_WARN_ON(!mult))
+	if (WARN_ON_ONCE(!mult))
 		mult = SCHED_CAPACITY_SCALE;
 
 	for_each_cpu(cpu, sg_policy->policy->cpus)
@@ -130,10 +130,7 @@ static inline void sugov_update_response_time_mult(struct sugov_policy *sg_polic
 static inline unsigned long
 sugov_apply_response_time(unsigned long util, int cpu)
 {
-	unsigned long mult;
-
-	mult = per_cpu(response_time_mult, cpu) * util;
-
+	unsigned long mult = per_cpu(response_time_mult, cpu) * util;
 	return mult >> SCHED_CAPACITY_SHIFT;
 }
 
@@ -312,9 +309,7 @@ static unsigned int get_next_freq(struct sugov_policy *sg_policy,
 static void sugov_build_dvfs_headroom_lut(struct sugov_policy *sg_policy)
 {
 	unsigned int i;
-	u64 delay;
-
-	delay = SUGOV_DELAY_US;
+	u64 delay = SUGOV_DELAY_US;
 
 	sg_policy->dvfs_headroom_lut_delay = delay;
 
@@ -400,15 +395,12 @@ unsigned long sugov_effective_cpu_perf(int cpu, unsigned long actual,
 	/* Add dvfs headroom to actual utilization */
 	actual = sugov_apply_response_time(actual, cpu);
 	actual = sugov_apply_dvfs_headroom(actual, cpu);
-	/* Actually we don't need to target the max performance */
-	if (actual < max)
-		max = actual;
 
 	/*
 	 * Ensure at least minimum performance while providing more compute
-	 * capacity when possible.
+	 * capacity when possible, clamped to the maximum allowed.
 	 */
-	return max(min, max);
+	return clamp(actual, min, max);
 }
 
 static void sugov_get_util(struct sugov_cpu *sg_cpu, unsigned long boost)
@@ -744,7 +736,6 @@ static struct governor_attr rate_limit_us = __ATTR_RW(rate_limit_us);
 static ssize_t response_time_ms_show(struct gov_attr_set *attr_set, char *buf)
 {
 	struct sugov_tunables *tunables = to_sugov_tunables(attr_set);
-
 	return sprintf(buf, "%u\n", tunables->response_time_ms);
 }
 
@@ -759,7 +750,6 @@ response_time_ms_store(struct gov_attr_set *attr_set, const char *buf, size_t co
 		return -EINVAL;
 
 	/* XXX need special handling for high values? */
-
 	tunables->response_time_ms = response_time_ms;
 
 	list_for_each_entry(sg_policy, &attr_set->policy_list, tunables_hook) {
